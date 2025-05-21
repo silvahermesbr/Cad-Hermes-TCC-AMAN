@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel - Sistema de Controle de Material</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Estilos adicionais para cabeçalhos ordenáveis */
+        .sortable-header {
+            cursor: pointer;
+            position: relative; /* Para posicionar o indicador */
+        }
+        .sortable-header:hover {
+            background-color: #e2e6ea;
+        }
+        .sort-indicator {
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+        .sort-indicator.asc::after { content: ' ▲'; }
+        .sort-indicator.desc::after { content: ' ▼'; }
+        .filtros-relatorio { /* Estilo para as divs de filtro */
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container dashboard-container">
+        <header class="dashboard-header">
+            <h1>Painel de Controle de Material</h1>
+            <div class="user-info">
+                <span>Bem-vindo, <span id="nomeUsuario">Usuário</span>!</span>
+                <button id="btnLogout" class="btn btn-logout">Sair</button>
+            </div>
+        </header>
+        <nav class="dashboard-nav">
+            <ul>
+                <li><a href="#" id="linkInventario" class="active-link">Inventário</a></li>
+                <li><a href="#" id="linkMovimentacoes">Movimentações</a></li>
+                <li><a href="#" id="linkPessoal">Pessoal</a></li>
+                <li><a href="#" id="linkRelatorios">Relatórios</a></li>
+            </ul>
+        </nav>
+        <main class="dashboard-main">
+            <section id="secaoInventario" class="content-section active-section">
+                <h2>Inventário de Material</h2>
+                <button id="btnAdicionarItem" class="btn btn-primary">Adicionar Novo Item</button>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable-header" data-column-key="codigo_item_bd">Cód. Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_item">Nome <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="descricao_item">Descrição <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="quantidade">Quantidade <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="local_armazenamento">Local <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="id_militar_dono">Dono (ID) <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_inicial">GDH Inicial <span class="sort-indicator"></span></th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaInventarioCorpo">
+                            <tr>
+                                <td colspan="8" class="text-center">Carregando inventário...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="secaoMovimentacoes" class="content-section">
+                <h2>Registro de Movimentações</h2>
+                 <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable-header" data-column-key="codigo_item_fk">Cód. Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_item_cautelado">Nome Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="quantidade_movimentada">Qtd Mov. <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="destino_movimentacao">Destino <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_saida">GDH Saída <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_entrada">GDH Entrada <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_esperado_devolucao">GDH Esperado <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_responsavel_cautela">Responsável Cautela <span class="sort-indicator"></span></th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaMovimentacoesCorpo">
+                             <tr>
+                                <td colspan="9" class="text-center">Carregando movimentações...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="secaoPessoal" class="content-section">
+                <h2>Militares Cadastrados</h2>
+                <button id="btnAdicionarMilitar" class="btn btn-primary" style="display: none; margin-bottom: 15px;">Adicionar Novo Militar</button>
+                 <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable-header" data-column-key="id_militar">ID Militar <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_completo">Nome Completo <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="numero_contato">Nº Contato <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="secao">Seção <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="identidade_militar">Identidade Militar <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="status">Status <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="is_admin">Admin? <span class="sort-indicator"></span></th>
+                                <th id="colAcoesPessoalHeader" style="display: none;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaPessoalCorpo">
+                            <tr>
+                                <td colspan="8" class="text-center">Carregando pessoal...</td> </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="secaoRelatorios" class="content-section">
+                <h2>Geração de Relatórios</h2>
+                <div class="form-group">
+                    <label for="tipoRelatorio">Tipo de Relatório:</label>
+                    <select id="tipoRelatorio" name="tipoRelatorio">
+                        <option value="inventario_total">Inventário Total</option>
+                        <option value="material_em_uso">Material em Uso</option>
+                        <option value="devolucao_atrasada">Devoluções Atrasadas</option>
+                    </select>
+                </div>
+
+                <div id="filtrosInventarioTotal" class="filtros-relatorio" style="display: block;">
+                    <h4>Filtros para Inventário Total:</h4>
+                    <div class="form-group">
+                        <label for="filtroInvNomeItem">Nome do Item (parcial):</label>
+                        <input type="text" id="filtroInvNomeItem" name="filtroInvNomeItem" placeholder="Ex: Rádio">
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroInvLocal">Local de Armazenamento (parcial):</label>
+                        <input type="text" id="filtroInvLocal" name="filtroInvLocal" placeholder="Ex: Almoxarifado">
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroInvIdDono">ID do Militar Dono (exato):</label>
+                        <input type="text" id="filtroInvIdDono" name="filtroInvIdDono" placeholder="Ex: CADETE_HERMES_01">
+                    </div>
+                </div>
+
+                <div id="filtrosMaterialEmUso" class="filtros-relatorio" style="display: none;">
+                    <h4>Filtros para Material em Uso:</h4>
+                    <div class="form-group">
+                        <label for="filtroUsoIdDonoItem">ID do Dono do Item (exato):</label>
+                        <input type="text" id="filtroUsoIdDonoItem" name="filtroUsoIdDonoItem" placeholder="Ex: CADETE_HERMES_01">
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroUsoIdPessoalCautelou">ID/Nome de Quem Cautelou:</label>
+                        <input type="text" id="filtroUsoIdPessoalCautelou" name="filtroUsoIdPessoalCautelou" placeholder="Ex: MILITAR_XYZ ou Nome Externo">
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroUsoDestino">Destino (parcial):</label>
+                        <input type="text" id="filtroUsoDestino" name="filtroUsoDestino" placeholder="Ex: Manobra">
+                    </div>
+                </div>
+                
+                <div id="filtrosDevolucoesAtrasadas" class="filtros-relatorio" style="display: none;">
+                    <h4>Filtros para Devoluções Atrasadas:</h4>
+                    <div class="form-group">
+                        <label for="filtroAtrasoIdDonoItem">ID do Dono do Item (exato):</label>
+                        <input type="text" id="filtroAtrasoIdDonoItem" name="filtroAtrasoIdDonoItem" placeholder="Ex: CADETE_HERMES_01">
+                    </div>
+                    <div class="form-group">
+                        <label for="filtroAtrasoIdPessoalCautelou">ID/Nome de Quem Cautelou:</label>
+                        <input type="text" id="filtroAtrasoIdPessoalCautelou" name="filtroAtrasoIdPessoalCautelou" placeholder="Ex: MILITAR_XYZ ou Nome Externo">
+                    </div>
+                </div>
+
+                <button id="btnGerarRelatorio" class="btn">Gerar Relatório</button>
+                
+                <div id="areaRelatorio" class="report-area">
+                    <p class="text-center">Selecione o tipo de relatório e clique em "Gerar Relatório".</p>
+                </div>
+            </section>
+        </main>
+
+        <div id="modalInventario" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h3 id="modalInventarioTitulo">Adicionar Novo Item ao Inventário</h3>
+                <form id="formInventario">
+                    <input type="hidden" id="idItemInventario" name="idItemInventario">
+                    <div class="form-group">
+                        <label for="codigoItem">Código do Item (Manual):</label>
+                        <input type="text" id="codigoItem" name="codigoItem" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nomeItem">Nome do Item:</label>
+                        <input type="text" id="nomeItem" name="nomeItem" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="descricaoItem">Descrição:</label>
+                        <textarea id="descricaoItem" name="descricaoItem" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="quantidadeItem">Quantidade:</label>
+                        <input type="number" id="quantidadeItem" name="quantidadeItem" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="localItem">Local de Armazenamento:</label>
+                        <input type="text" id="localItem" name="localItem">
+                    </div>
+                    <button type="submit" class="btn">Salvar Item</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="modalCautela" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h3 id="modalCautelaTitulo">Cautelar Item</h3>
+                <form id="formCautela">
+                    <input type="hidden" id="codigoItemCautela" name="codigoItemCautela">
+                    
+                    <div class="form-group">
+                        <label>Tipo de Cautela:</label>
+                        <input type="radio" id="tipoCautelaInterno" name="tipoCautela" value="interno" checked>
+                        <label for="tipoCautelaInterno" style="display: inline; font-weight: normal; margin-right: 15px;">Militar Cadastrado</label>
+                        <input type="radio" id="tipoCautelaExterno" name="tipoCautela" value="externo">
+                        <label for="tipoCautelaExterno" style="display: inline; font-weight: normal;">Militar Externo</label>
+                    </div>
+
+                    <div id="camposCautelaInterno" class="form-group">
+                        <label for="idMilitarCautela">ID do Militar que está Cautelando:</label>
+                        <input type="text" id="idMilitarCautela" name="idMilitarCautela">
+                    </div>
+                    <div id="camposCautelaExterno" style="display: none;">
+                        <div class="form-group">
+                            <label for="nomeExternoCautelou">Nome do Militar Externo:</label>
+                            <input type="text" id="nomeExternoCautelou" name="nomeExternoCautelou">
+                        </div>
+                        <div class="form-group">
+                            <label for="docExternoCautelou">Documento do Militar Externo:</label>
+                            <input type="text" id="docExternoCautelou" name="docExternoCautelou">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quantidadeCautela">Quantidade a Cautelar:</label>
+                        <input type="number" id="quantidadeCautela" name="quantidadeCautela" min="1" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="destinoCautela">Destino da Movimentação:</label>
+                        <input type="text" id="destinoCautela" name="destinoCautela" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="gdhEsperadoCautela">GDH Esperado para Devolução (DD/MM/AAAA HH:MM:SS):</label>
+                        <input type="text" id="gdhEsperadoCautela" name="gdhEsperadoCautela" placeholder="Ex: 25/12/2025 18:00:00" required>
+                    </div>
+                    <button type="submit" class="btn">Confirmar Cautela</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="modalPessoal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h3 id="modalPessoalTitulo">Adicionar Novo Militar</h3>
+                <form id="formPessoal">
+                    <input type="hidden" id="idMilitarEdicao" name="idMilitarEdicao">
+                    <div class="form-group">
+                        <label for="pessoalIdMilitar">ID Militar (Login Único):</label>
+                        <input type="text" id="pessoalIdMilitar" name="pessoalIdMilitar" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalNomeCompleto">Nome Completo:</label>
+                        <input type="text" id="pessoalNomeCompleto" name="pessoalNomeCompleto" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalIdentidadeMilitar">Identidade Militar (Documento):</label>
+                        <input type="text" id="pessoalIdentidadeMilitar" name="pessoalIdentidadeMilitar" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalSenha">Senha:</label>
+                        <input type="password" id="pessoalSenha" name="pessoalSenha">
+                        <small>Deixe em branco se não quiser alterar a senha (em modo de edição).</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalNumeroContato">Nº Contato:</label>
+                        <input type="text" id="pessoalNumeroContato" name="pessoalNumeroContato">
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalSecao">Seção:</label>
+                        <input type="text" id="pessoalSecao" name="pessoalSecao">
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalStatus">Status do Login:</label>
+                        <select id="pessoalStatus" name="pessoalStatus">
+                            <option value="1">Ativo</option>
+                            <option value="0">Inativo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalIsAdmin">É Administrador?</label>
+                        <select id="pessoalIsAdmin" name="pessoalIsAdmin">
+                            <option value="0">Não</option>
+                            <option value="1">Sim</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">Salvar Militar</button>
+                </form>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 - Cadete Hermes, turma 2025</p>
+        </footer>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
+

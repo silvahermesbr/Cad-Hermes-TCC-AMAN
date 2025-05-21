@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório - Sistema de Controle de Material</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'army-green': '#4F6A4E',
+                        'gold-accent': '#B8860B',
+                        'navy-blue': '#2C3E50',
+                        'light-gray': '#f0f2f5',
+                        'medium-gray': '#d1d5db',
+                        'dark-gray': '#374151',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray for screen view */
+            color: #374151; /* dark-gray */
+            margin: 0; /* Reset default margin */
+        }
+
+        .report-container-screen {
+            max-width: 1200px;
+            margin: 2rem auto; /* Centering for screen */
+            padding: 2rem;
+            background-color: white;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); /* shadow-lg */
+        }
+
+        /* Styles for sortable table headers (kept for JS compatibility) */
+        .sortable-header {
+            cursor: pointer;
+            position: relative;
+            /* Tailwind classes will handle most styling, but keep for JS targeting if needed */
+        }
+        .sort-indicator {
+            font-size: 0.8em;
+            margin-left: 5px;
+            display: inline-block; /* Ensure it flows with text */
+        }
+        .sort-indicator.asc::after { content: ' ▲'; }
+        .sort-indicator.desc::after { content: ' ▼'; }
+
+        /* Print specific styles */
+        @media print {
+            body {
+                background-color: #fff !important; /* White background for print */
+                color: #000 !important; /* Black text for print */
+                font-size: 9pt;
+                margin: 1cm; /* Standard A4 margins */
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            .report-container-screen {
+                width: 100%;
+                max-width: none;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
+            .print-button-container {
+                display: none !important;
+            }
+            header.report-header {
+                border-bottom: 2px solid #000; /* Thicker border for print header */
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+                text-align: center;
+            }
+            header.report-header h1 {
+                font-size: 16pt !important; /* Larger for main title */
+                color: #000 !important;
+            }
+            header.report-header p {
+                font-size: 10pt !important;
+                color: #333 !important;
+            }
+            .conteudo-relatorio h2 {
+                font-size: 13pt !important;
+                color: #000 !important;
+                margin-top: 1.5rem;
+                margin-bottom: 0.75rem;
+                text-align: center;
+            }
+            .info-geracao {
+                font-size: 8pt !important;
+                color: #444 !important;
+                text-align: right !important;
+                margin-bottom: 15px !important;
+            }
+            .table-container {
+                overflow-x: visible !important; /* Allow table to use full width */
+                margin-top: 10px !important;
+            }
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 8pt !important;
+            }
+            th, td {
+                border: 1px solid #666 !important; /* Clear borders for print */
+                padding: 5px !important;
+                text-align: left !important;
+                vertical-align: top; /* Ensure content aligns well if it wraps */
+            }
+            thead th {
+                background-color: #e5e7eb !important; /* Light gray for table headers in print */
+                color: #000 !important;
+                font-weight: bold !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            tbody tr {
+                page-break-inside: avoid !important; /* Try to keep rows on the same page */
+            }
+            thead {
+                display: table-header-group !important; /* Repeat headers on each page */
+            }
+            a {
+                text-decoration: none !important;
+                color: inherit !important; /* Avoid blue links in print */
+            }
+            /* Hide Tailwind responsive prefixes in print if they cause issues, e.g. md: */
+            .md\:grid-cols-3 { /* Example if you had specific grid for md */
+                 /* grid-template-columns: repeat(1, minmax(0, 1fr)) !important; */
+            }
+        }
+    </style>
+</head>
+<body class="bg-light-gray">
+
+    <div class="report-container-screen">
+        <header class="report-header text-center mb-8 pb-4 border-b border-gray-300">
+            <h1 id="tituloPrincipalRelatorio" class="text-3xl font-bold text-navy-blue">Relatório do Sistema</h1>
+            <p class="text-md text-army-green">1ª Companhia de Comunicações</p>
+        </header>
+
+        <div class="print-button-container text-center mb-6">
+            <button id="btnImprimirRelatorio"
+                    class="bg-army-green text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-army-green focus:ring-offset-2 transition-all duration-300 ease-in-out">
+                <i class="fas fa-print mr-2"></i>Imprimir Relatório
+            </button>
+        </div>
+
+        <div id="infoGeracaoRelatorio" class="info-geracao text-sm text-gray-600 mb-6 text-right">
+            </div>
+
+        <div id="conteudoRelatorioDinamico" class="conteudo-relatorio">
+            <p class="text-center text-gray-500 py-8">Carregando dados do relatório...</p>
+            </div>
+    </div>
+
+    <script>
+        let localRelatorioData = [];
+        let relatorioSortState = { column: null, direction: 'asc' };
+        let currentRenderFunction = null;
+        let currentFiltrosAplicados = {};
+
+        function parseGDH(gdhString) {
+            if (!gdhString || typeof gdhString !== 'string') return null;
+            // DD/MM/AAAA HH:MM:SS
+            const parts = gdhString.match(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/);
+            if (!parts) return null;
+            // Month is 0-indexed in JavaScript Date
+            return new Date(parts[3], parts[2] - 1, parts[1], parts[4], parts[5], parts[6]);
+        }
+
+        function sortDataRelatorio(dataArray, columnKey, direction) {
+            if (!Array.isArray(dataArray)) return [];
+            return [...dataArray].sort((a, b) => {
+                let valA = a[columnKey];
+                let valB = b[columnKey];
+
+                // Date/GDH handling
+                if (columnKey && (columnKey.toLowerCase().includes('gdh') || columnKey.toLowerCase().includes('data'))) {
+                    valA = parseGDH(valA);
+                    valB = parseGDH(valB);
+                    if (valA === null && valB === null) return 0;
+                    if (valA === null) return direction === 'asc' ? 1 : -1; // Nulls last for asc, first for desc
+                    if (valB === null) return direction === 'asc' ? -1 : 1; // Nulls last for asc, first for desc
+                }
+                // Numeric handling (ensure it's not an ID field that looks numeric)
+                else if (typeof valA === 'string' && !isNaN(parseFloat(valA)) && typeof valB === 'string' && !isNaN(parseFloat(valB)) &&
+                         !['codigo_item_bd', 'id_militar_dono', 'codigo_item_fk', 'id_pessoal_cautelou', 'id_dono_real_item'].includes(columnKey)) {
+                    if (String(valA).match(/^\d+(\.\d+)?$/) && String(valB).match(/^\d+(\.\d+)?$/)) { // Check if they are purely numeric strings
+                        valA = parseFloat(valA);
+                        valB = parseFloat(valB);
+                    }
+                }
+                // General string comparison (case-insensitive)
+                else {
+                    if (typeof valA === 'string') { valA = valA.toLowerCase(); }
+                    if (typeof valB === 'string') { valB = valB.toLowerCase(); }
+                }
+
+                let comparison = 0;
+                if (valA > valB) comparison = 1;
+                else if (valA < valB) comparison = -1;
+                return direction === 'desc' ? comparison * -1 : comparison;
+            });
+        }
+
+        function updateRelatorioSortIndicators(columnKey, direction) {
+            const tableHeaders = document.querySelectorAll('#conteudoRelatorioDinamico th.sortable-header');
+            tableHeaders.forEach(th => {
+                const indicator = th.querySelector('.sort-indicator');
+                if (indicator) {
+                    indicator.classList.remove('asc', 'desc');
+                    // Clear text content of indicator
+                    indicator.textContent = '';
+                    if (th.dataset.columnKey === columnKey) {
+                        indicator.classList.add(direction);
+                        // Set text content based on direction
+                        indicator.textContent = direction === 'asc' ? ' ▲' : ' ▼';
+                    }
+                }
+            });
+        }
+
+        function renderInfoGeracao(titulo, filtros) {
+            const infoGeracaoDiv = document.getElementById('infoGeracaoRelatorio');
+            if (!infoGeracaoDiv) return;
+
+            let infoHtml = `Relatório gerado em: <strong class="font-medium">${new Date().toLocaleString('pt-BR')}</strong>`;
+            let filtrosTexto = 'Filtros aplicados: ';
+            let algumFiltro = false;
+
+            const formatKey = (key) => {
+                 const map = {
+                    nome_item: "Nome Item",
+                    local: "Local",
+                    id_dono: "ID Dono",
+                    id_dono_item: "ID Dono Item",
+                    id_pessoal_cautelou: "ID/Nome Quem Cautelou",
+                    destino: "Destino"
+                 };
+                 return map[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            };
+
+
+            if (filtros && typeof filtros === 'object' && Object.keys(filtros).length > 0) {
+                for (const key in filtros) {
+                    if (filtros[key] && filtros[key].toString().trim() !== '') {
+                        filtrosTexto += `${formatKey(key)}: <strong class="font-medium">${filtros[key]}</strong>; `;
+                        algumFiltro = true;
+                    }
+                }
+            }
+
+            if (!algumFiltro) filtrosTexto += '<em class="text-gray-500">Nenhum filtro específico.</em>';
+            else filtrosTexto = filtrosTexto.trim().replace(/;$/, '');
+
+            infoHtml += `<br>${filtrosTexto}`;
+            infoGeracaoDiv.innerHTML = infoHtml;
+        }
+
+
+        function addSortListenersToRelatorioTable() {
+            const headers = document.querySelectorAll('#conteudoRelatorioDinamico th.sortable-header');
+            headers.forEach(header => {
+                // Remove old listeners to prevent duplicates if re-rendering
+                const newHeader = header.cloneNode(true);
+                header.parentNode.replaceChild(newHeader, header);
+
+                newHeader.addEventListener('click', () => {
+                    const columnKey = newHeader.dataset.columnKey;
+                    let direction = 'asc';
+                    if (relatorioSortState.column === columnKey) {
+                        direction = relatorioSortState.direction === 'asc' ? 'desc' : 'asc';
+                    }
+                    relatorioSortState = { column: columnKey, direction: direction };
+                    const sortedData = sortDataRelatorio(localRelatorioData, columnKey, direction);
+
+                    if (currentRenderFunction) {
+                        currentRenderFunction(sortedData, currentFiltrosAplicados); // Re-render with sorted data
+                    }
+                    // updateRelatorioSortIndicators is called within the render functions after table is rebuilt
+                });
+            });
+        }
+
+        // Base function to create table HTML structure
+        function createTableHtml(title, headersConfig, data, rowRenderer) {
+            const conteudoRelatorioDiv = document.getElementById('conteudoRelatorioDinamico');
+            const tituloPrincipalRelatorio = document.getElementById('tituloPrincipalRelatorio');
+
+            if (tituloPrincipalRelatorio) tituloPrincipalRelatorio.textContent = title;
+            renderInfoGeracao(title, currentFiltrosAplicados); // Use currentFiltrosAplicados
+
+            if (!data || data.length === 0) {
+                conteudoRelatorioDiv.innerHTML = `<h2 class="text-2xl font-semibold text-gray-700 text-center mb-4">${title}</h2>
+                                                 <p class="text-center text-gray-500 py-4">Nenhum dado encontrado para este relatório com os filtros aplicados.</p>`;
+                return;
+            }
+
+            let tableHeaderHtml = headersConfig.map(header =>
+                `<th class="sortable-header py-3 px-4 bg-gray-100 text-gray-600 font-semibold uppercase text-sm border-b border-gray-300" data-column-key="${header.key}">
+                    ${header.label} <span class="sort-indicator"></span>
+                 </th>`
+            ).join('');
+
+            let tableBodyHtml = data.map(rowRenderer).join('');
+
+            conteudoRelatorioDiv.innerHTML = `
+                <h2 class="text-2xl font-semibold text-gray-700 text-center mb-6">${title}</h2>
+                <div class="table-container overflow-x-auto shadow-md rounded-lg">
+                    <table class="min-w-full bg-white">
+                        <thead class="bg-gray-50">
+                            <tr>${tableHeaderHtml}</tr>
+                        </thead>
+                        <tbody class="text-gray-700">
+                            ${tableBodyHtml}
+                        </tbody>
+                    </table>
+                </div>`;
+            addSortListenersToRelatorioTable();
+            if (relatorioSortState.column) {
+                updateRelatorioSortIndicators(relatorioSortState.column, relatorioSortState.direction);
+            }
+        }
+
+        // Render function for Inventário Total
+        function renderTabelaInventarioTotal(dados, filtros) {
+            currentRenderFunction = renderTabelaInventarioTotal; // Store self for sorting
+            currentFiltrosAplicados = filtros; // Store current filters
+
+            const headers = [
+                { key: 'codigo_item_bd', label: 'Cód. Item' },
+                { key: 'nome_item', label: 'Nome Item' },
+                { key: 'descricao_item', label: 'Descrição' },
+                { key: 'quantidade', label: 'Qtd.' },
+                { key: 'local_armazenamento', label: 'Local' },
+                { key: 'id_militar_dono', label: 'ID Dono' },
+                { key: 'nome_militar_dono', label: 'Nome Dono' },
+                { key: 'gdh_inicial', label: 'GDH Inicial' }
+            ];
+            const rowRenderer = item => `
+                <tr class="hover:bg-gray-100 border-b border-gray-200">
+                    <td class="py-3 px-4">${item.codigo_item_bd || ''}</td>
+                    <td class="py-3 px-4">${item.nome_item || ''}</td>
+                    <td class="py-3 px-4">${item.descricao_item || ''}</td>
+                    <td class="py-3 px-4 text-center">${item.quantidade || 0}</td>
+                    <td class="py-3 px-4">${item.local_armazenamento || ''}</td>
+                    <td class="py-3 px-4">${item.id_militar_dono || ''}</td>
+                    <td class="py-3 px-4">${item.nome_militar_dono || 'N/A'}</td>
+                    <td class="py-3 px-4">${item.gdh_inicial || ''}</td>
+                </tr>`;
+            createTableHtml('Relatório de Inventário Total', headers, dados, rowRenderer);
+        }
+
+        // Render function for Material em Uso / Devoluções Atrasadas
+        function renderTabelaMovimentacoesComuns(dados, filtros, titulo) {
+            currentFiltrosAplicados = filtros; // Store current filters
+
+            const headers = [
+                { key: 'codigo_item_fk', label: 'Cód. Item' },
+                { key: 'nome_item_cautelado', label: 'Nome Item' },
+                { key: 'quantidade_movimentada', label: 'Qtd.' },
+                { key: 'destino_movimentacao', label: 'Destino' },
+                { key: 'gdh_saida', label: 'GDH Saída' },
+                { key: 'gdh_esperado_devolucao', label: 'GDH Devol. Prev.' },
+                { key: 'nome_responsavel_cautela', label: 'Responsável Cautela' },
+                { key: 'doc_externo_cautelou', label: 'Doc. Externo' },
+                { key: 'secao_pessoal_cautelou', label: 'Seção Cautelou' },
+                { key: 'nome_dono_real_item', label: 'Nome Dono Item' }
+            ];
+            const rowRenderer = item => `
+                <tr class="hover:bg-gray-100 border-b border-gray-200">
+                    <td class="py-3 px-4">${item.codigo_item_fk || ''}</td>
+                    <td class="py-3 px-4">${item.nome_item_cautelado || ''}</td>
+                    <td class="py-3 px-4 text-center">${item.quantidade_movimentada || 0}</td>
+                    <td class="py-3 px-4">${item.destino_movimentacao || ''}</td>
+                    <td class="py-3 px-4">${item.gdh_saida || ''}</td>
+                    <td class="py-3 px-4">${item.gdh_esperado_devolucao || ''}</td>
+                    <td class="py-3 px-4">${item.nome_responsavel_cautela || ''}</td>
+                    <td class="py-3 px-4">${item.doc_externo_cautelou || ''}</td>
+                    <td class="py-3 px-4">${item.secao_pessoal_cautelou || ''}</td>
+                    <td class="py-3 px-4">${item.nome_dono_real_item || ''}</td>
+                </tr>`;
+            createTableHtml(titulo, headers, dados, rowRenderer);
+        }
+
+        function renderTabelaMaterialEmUso(dados, filtros) {
+            currentRenderFunction = renderTabelaMaterialEmUso; // Store self for sorting
+            renderTabelaMovimentacoesComuns(dados, filtros, 'Relatório de Material em Uso');
+        }
+
+        function renderTabelaDevolucoesAtrasadas(dados, filtros) {
+            currentRenderFunction = renderTabelaDevolucoesAtrasadas; // Store self for sorting
+            renderTabelaMovimentacoesComuns(dados, filtros, 'Relatório de Devoluções Atrasadas');
+        }
+
+
+        // --- Main Logic on Page Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnImprimir = document.getElementById('btnImprimirRelatorio');
+            if (btnImprimir) {
+                btnImprimir.addEventListener('click', () => window.print());
+            }
+
+            const dadosRelatorioString = sessionStorage.getItem('dadosParaRelatorio');
+            const tituloSessao = sessionStorage.getItem('tituloParaRelatorio');
+            const filtrosAplicadosString = sessionStorage.getItem('filtrosParaRelatorio');
+
+            try {
+                localRelatorioData = dadosRelatorioString ? JSON.parse(dadosRelatorioString) : [];
+                currentFiltrosAplicados = filtrosAplicadosString ? JSON.parse(filtrosAplicadosString) : {};
+            } catch (e) {
+                console.error("Erro ao parsear dados da sessão:", e);
+                localRelatorioData = [];
+                currentFiltrosAplicados = {};
+                document.getElementById('conteudoRelatorioDinamico').innerHTML =
+                    '<p class="text-center text-red-600 py-8">Erro ao carregar dados do relatório. Verifique o console.</p>';
+                return;
+            }
+
+            relatorioSortState = { column: null, direction: 'asc' }; // Reset sort state
+
+            if (localRelatorioData.length > 0 && tituloSessao) {
+                let initialSortColumn = 'nome_item'; // Default sort
+                if (tituloSessao === 'Relatório de Inventário Total') {
+                    initialSortColumn = 'nome_militar_dono'; // Or 'nome_item'
+                    currentRenderFunction = renderTabelaInventarioTotal;
+                } else if (tituloSessao === 'Relatório de Material em Uso') {
+                    initialSortColumn = 'gdh_esperado_devolucao';
+                    currentRenderFunction = renderTabelaMaterialEmUso;
+                } else if (tituloSessao === 'Relatório de Devoluções Atrasadas') {
+                    initialSortColumn = 'gdh_esperado_devolucao';
+                    currentRenderFunction = renderTabelaDevolucoesAtrasadas;
+                } else {
+                    document.getElementById('conteudoRelatorioDinamico').innerHTML =
+                        '<p class="text-center text-orange-600 py-8">Tipo de relatório desconhecido ou não especificado.</p>';
+                    return;
+                }
+
+                relatorioSortState = { column: initialSortColumn, direction: 'asc' };
+                const dadosOrdenados = sortDataRelatorio(localRelatorioData, relatorioSortState.column, relatorioSortState.direction);
+                currentRenderFunction(dadosOrdenados, currentFiltrosAplicados);
+
+            } else {
+                 document.getElementById('conteudoRelatorioDinamico').innerHTML =
+                    '<p class="text-center text-gray-500 py-8">Nenhum dado para exibir. Por favor, gere um relatório no painel de controle primeiro.</p>';
+                 renderInfoGeracao(tituloSessao || "Relatório", currentFiltrosAplicados); // Show filters even if no data
+            }
+        });
+    </script>
+</body>
+</html>
+

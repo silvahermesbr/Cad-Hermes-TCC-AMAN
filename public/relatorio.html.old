@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório - Sistema de Controle de Material</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+            background-color: #fff;
+        }
+        .container-relatorio {
+            width: 95%;
+            max-width: 1200px; 
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 15px;
+        }
+        header h1 { margin: 0; font-size: 1.8em; }
+        header p { margin: 5px 0; font-size: 0.9em; color: #555; }
+        .conteudo-relatorio { margin-bottom: 30px; }
+        .conteudo-relatorio h2 {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .table-container { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; vertical-align: top; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .info-geracao { font-size: 0.8em; color: #777; margin-bottom: 20px; text-align: right; }
+        .print-button-container { text-align: center; margin-bottom: 20px; padding: 10px 0; }
+        .btn {
+            display: inline-block; background-color: #007bff; color: white;
+            padding: 10px 20px; border: none; border-radius: 4px;
+            cursor: pointer; text-decoration: none; font-size: 1em;
+        }
+        .btn:hover { background-color: #0056b3; }
+
+        .sortable-header { cursor: pointer; position: relative; }
+        .sortable-header:hover { background-color: #e2e6ea; }
+        .sort-indicator { font-size: 0.8em; margin-left: 5px; }
+        .sort-indicator.asc::after { content: ' ▲'; }
+        .sort-indicator.desc::after { content: ' ▼'; }
+
+        @media print {
+            body { margin: 0; font-size: 9pt; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+            .container-relatorio { width: 100%; max-width: none; margin: 0; box-shadow: none; }
+            .print-button-container { display: none !important; }
+            header { border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+            header h1 { font-size: 14pt; }
+            .conteudo-relatorio h2 { font-size: 12pt; }
+            th { background-color: #eee !important; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+            table, th, td { border: 1px solid #666 !important; padding: 4px;}
+            table { font-size: 8pt; }
+            table, figure, pre { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            thead { display: table-header-group; }
+            a { text-decoration: none; color: inherit; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-relatorio">
+        <header>
+            <h1 id="tituloPrincipalRelatorio">Relatório do Sistema de Controle de Material</h1>
+            <p>1ª Companhia de Comunicações</p>
+        </header>
+
+        <div class="print-button-container">
+            <button id="btnImprimirRelatorio" class="btn">Imprimir para PDF / Imprimir</button>
+        </div>
+
+        <div id="infoGeracaoRelatorio" class="info-geracao"></div>
+        <div id="conteudoRelatorioDinamico" class="conteudo-relatorio">
+            <p style="text-align:center;">Carregando dados do relatório...</p>
+        </div>
+    </div>
+
+    <script>
+        let localRelatorioData = []; 
+        let relatorioSortState = { column: null, direction: 'asc' };
+        let currentRenderFunction = null; 
+        let currentFiltrosAplicados = {};
+
+        function parseGDH(gdhString) {
+            if (!gdhString || typeof gdhString !== 'string') return null;
+            const parts = gdhString.match(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/);
+            if (!parts) return null;
+            return new Date(parts[3], parts[2] - 1, parts[1], parts[4], parts[5], parts[6]);
+        }
+
+        function sortDataRelatorio(dataArray, columnKey, direction) {
+            if (!Array.isArray(dataArray)) return [];
+            return [...dataArray].sort((a, b) => {
+                let valA = a[columnKey];
+                let valB = b[columnKey];
+                if (columnKey && (columnKey.toLowerCase().includes('gdh') || columnKey.toLowerCase().includes('data'))) {
+                    valA = parseGDH(valA);
+                    valB = parseGDH(valB);
+                    if (valA === null && valB === null) return 0;
+                    if (valA === null) return direction === 'asc' ? 1 : -1;
+                    if (valB === null) return direction === 'asc' ? -1 : 1;
+                } else if (typeof valA === 'string' && !isNaN(parseFloat(valA)) && typeof valB === 'string' && !isNaN(parseFloat(valB)) &&
+                           columnKey !== 'codigo_item_bd' && columnKey !== 'id_militar_dono' && columnKey !== 'codigo_item_fk' &&
+                           columnKey !== 'id_pessoal_cautelou' && columnKey !== 'id_dono_real_item') {
+                    if (String(valA).match(/^\d+(\.\d+)?$/) && String(valB).match(/^\d+(\.\d+)?$/)) {
+                        valA = parseFloat(valA);
+                        valB = parseFloat(valB);
+                    }
+                } else if (typeof valA === 'number' && typeof valB === 'number') { /* No action */
+                } else if (typeof valA === 'string') { valA = valA.toLowerCase(); }
+                if (typeof valB === 'string') { valB = valB.toLowerCase(); }
+                let comparison = 0;
+                if (valA > valB) comparison = 1;
+                else if (valA < valB) comparison = -1;
+                return direction === 'desc' ? comparison * -1 : comparison;
+            });
+        }
+
+        function updateRelatorioSortIndicators(columnKey, direction) {
+            const tableHeaders = document.querySelectorAll('#conteudoRelatorioDinamico th.sortable-header');
+            tableHeaders.forEach(th => {
+                const indicator = th.querySelector('.sort-indicator');
+                if (indicator) {
+                    indicator.classList.remove('asc', 'desc');
+                    if (th.dataset.columnKey === columnKey) indicator.classList.add(direction);
+                }
+            });
+        }
+        
+        function renderInfoGeracao(titulo, filtros) {
+            const infoGeracaoDiv = document.getElementById('infoGeracaoRelatorio');
+            let infoHtml = `Relatório gerado em: ${new Date().toLocaleString('pt-BR')}`;
+            let filtrosTexto = 'Filtros aplicados: ';
+            let algumFiltro = false;
+
+            if (titulo === 'Relatório de Inventário Total') {
+                if (filtros.nome_item) { filtrosTexto += `Nome Item: <strong>${filtros.nome_item}</strong>; `; algumFiltro = true; }
+                if (filtros.local) { filtrosTexto += `Local: <strong>${filtros.local}</strong>; `; algumFiltro = true; }
+                if (filtros.id_dono) { filtrosTexto += `ID Dono: <strong>${filtros.id_dono}</strong>;`; algumFiltro = true; }
+            } else if (titulo === 'Relatório de Material em Uso' || titulo === 'Relatório de Devoluções Atrasadas') {
+                if (filtros.id_dono_item) { filtrosTexto += `ID Dono Item: <strong>${filtros.id_dono_item}</strong>; `; algumFiltro = true; }
+                if (filtros.id_pessoal_cautelou) { filtrosTexto += `ID/Nome Quem Cautelou: <strong>${filtros.id_pessoal_cautelou}</strong>; `; algumFiltro = true; }
+                if (titulo === 'Relatório de Material em Uso' && filtros.destino) { 
+                    filtrosTexto += `Destino: <strong>${filtros.destino}</strong>;`; algumFiltro = true; 
+                }
+            }
+
+            if (!algumFiltro) filtrosTexto += 'Nenhum.';
+            else filtrosTexto = filtrosTexto.trim().replace(/;$/, ''); 
+
+            infoHtml += `<br>${filtrosTexto}`;
+            if(infoGeracaoDiv) infoGeracaoDiv.innerHTML = infoHtml;
+        }
+
+        function addSortListenersToRelatorioTable() {
+            const headers = document.querySelectorAll('#conteudoRelatorioDinamico th.sortable-header');
+            headers.forEach(header => {
+                header.addEventListener('click', () => {
+                    const columnKey = header.dataset.columnKey;
+                    let direction = 'asc';
+                    if (relatorioSortState.column === columnKey) {
+                        direction = relatorioSortState.direction === 'asc' ? 'desc' : 'asc';
+                    }
+                    relatorioSortState = { column: columnKey, direction: direction };
+                    const sortedData = sortDataRelatorio(localRelatorioData, columnKey, direction);
+                    
+                    if (currentRenderFunction) {
+                        currentRenderFunction(sortedData, currentFiltrosAplicados);
+                    }
+                    updateRelatorioSortIndicators(columnKey, direction);
+                });
+            });
+        }
+
+        function renderTabelaInventarioTotal(dados, filtros) {
+            const conteudoRelatorioDiv = document.getElementById('conteudoRelatorioDinamico');
+            const tituloPrincipalRelatorio = document.getElementById('tituloPrincipalRelatorio');
+            const tituloRelatorio = 'Relatório de Inventário Total';
+            currentRenderFunction = renderTabelaInventarioTotal; 
+
+            if(tituloPrincipalRelatorio) tituloPrincipalRelatorio.textContent = tituloRelatorio;
+            renderInfoGeracao(tituloRelatorio, filtros);
+
+            if (!dados || dados.length === 0) {
+                conteudoRelatorioDiv.innerHTML = `<h2>${tituloRelatorio}</h2><p style="text-align:center;">Nenhum dado encontrado.</p>`;
+                return;
+            }
+            let tabelaHtml = `<h2>${tituloRelatorio}</h2><div class="table-container"><table><thead><tr>
+                                <th class="sortable-header" data-column-key="codigo_item_bd">Cód. Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_item">Nome Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="descricao_item">Descrição <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="quantidade">Qtd. <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="local_armazenamento">Local <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="id_militar_dono">ID Dono <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_militar_dono">Nome Dono <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_inicial">GDH Inicial <span class="sort-indicator"></span></th>
+                            </tr></thead><tbody>`;
+            dados.forEach(item => {
+                tabelaHtml += `<tr>
+                        <td>${item.codigo_item_bd || ''}</td><td>${item.nome_item || ''}</td>
+                        <td>${item.descricao_item || ''}</td><td>${item.quantidade || 0}</td>
+                        <td>${item.local_armazenamento || ''}</td><td>${item.id_militar_dono || ''}</td>
+                        <td>${item.nome_militar_dono || 'N/A'}</td><td>${item.gdh_inicial || ''}</td></tr>`;
+            });
+            tabelaHtml += `</tbody></table></div>`;
+            conteudoRelatorioDiv.innerHTML = tabelaHtml;
+            addSortListenersToRelatorioTable();
+            if(relatorioSortState.column) updateRelatorioSortIndicators(relatorioSortState.column, relatorioSortState.direction);
+        }
+
+        function renderTabelaMaterialEmUso(dados, filtros) {
+            const conteudoRelatorioDiv = document.getElementById('conteudoRelatorioDinamico');
+            const tituloPrincipalRelatorio = document.getElementById('tituloPrincipalRelatorio');
+            const tituloRelatorio = 'Relatório de Material em Uso';
+            currentRenderFunction = renderTabelaMaterialEmUso;
+
+            if(tituloPrincipalRelatorio) tituloPrincipalRelatorio.textContent = tituloRelatorio;
+            renderInfoGeracao(tituloRelatorio, filtros);
+
+            if (!dados || dados.length === 0) {
+                conteudoRelatorioDiv.innerHTML = `<h2>${tituloRelatorio}</h2><p style="text-align:center;">Nenhum material em uso com os filtros aplicados.</p>`;
+                return;
+            }
+            let tabelaHtml = `<h2>${tituloRelatorio}</h2><div class="table-container"><table><thead><tr>
+                                <th class="sortable-header" data-column-key="codigo_item_fk">Cód. Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_item_cautelado">Nome Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="quantidade_movimentada">Qtd. <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="destino_movimentacao">Destino <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_saida">GDH Saída <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_esperado_devolucao">GDH Devol. Prev. <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_responsavel_cautela">Responsável Cautela <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="doc_externo_cautelou">Doc. Externo <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="secao_pessoal_cautelou">Seção Cautelou <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_dono_real_item">Nome Dono Item <span class="sort-indicator"></span></th>
+                            </tr></thead><tbody>`;
+            dados.forEach(item => {
+                tabelaHtml += `<tr>
+                        <td>${item.codigo_item_fk || ''}</td><td>${item.nome_item_cautelado || ''}</td>
+                        <td>${item.quantidade_movimentada || 0}</td><td>${item.destino_movimentacao || ''}</td>
+                        <td>${item.gdh_saida || ''}</td><td>${item.gdh_esperado_devolucao || ''}</td>
+                        <td>${item.nome_responsavel_cautela || ''}</td><td>${item.doc_externo_cautelou || ''}</td>
+                        <td>${item.secao_pessoal_cautelou || ''}</td><td>${item.nome_dono_real_item || ''}</td></tr>`;
+            });
+            tabelaHtml += `</tbody></table></div>`;
+            conteudoRelatorioDiv.innerHTML = tabelaHtml;
+            addSortListenersToRelatorioTable();
+            if(relatorioSortState.column) updateRelatorioSortIndicators(relatorioSortState.column, relatorioSortState.direction);
+        }
+
+        function renderTabelaDevolucoesAtrasadas(dados, filtros) {
+            const conteudoRelatorioDiv = document.getElementById('conteudoRelatorioDinamico');
+            const tituloPrincipalRelatorio = document.getElementById('tituloPrincipalRelatorio');
+            const tituloRelatorio = 'Relatório de Devoluções Atrasadas';
+            currentRenderFunction = renderTabelaDevolucoesAtrasadas;
+
+            if(tituloPrincipalRelatorio) tituloPrincipalRelatorio.textContent = tituloRelatorio;
+            renderInfoGeracao(tituloRelatorio, filtros);
+
+            if (!dados || dados.length === 0) {
+                conteudoRelatorioDiv.innerHTML = `<h2>${tituloRelatorio}</h2><p style="text-align:center;">Nenhuma devolução atrasada encontrada com os filtros aplicados.</p>`;
+                return;
+            }
+            // As colunas são as mesmas do "Material em Uso"
+            let tabelaHtml = `<h2>${tituloRelatorio}</h2><div class="table-container"><table><thead><tr>
+                                <th class="sortable-header" data-column-key="codigo_item_fk">Cód. Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_item_cautelado">Nome Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="quantidade_movimentada">Qtd. <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="destino_movimentacao">Destino <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_saida">GDH Saída <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_esperado_devolucao">GDH Devol. Prev. <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_responsavel_cautela">Responsável Cautela <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="doc_externo_cautelou">Doc. Externo <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="secao_pessoal_cautelou">Seção Cautelou <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_dono_real_item">Nome Dono Item <span class="sort-indicator"></span></th>
+                            </tr></thead><tbody>`;
+            dados.forEach(item => {
+                tabelaHtml += `<tr>
+                        <td>${item.codigo_item_fk || ''}</td><td>${item.nome_item_cautelado || ''}</td>
+                        <td>${item.quantidade_movimentada || 0}</td><td>${item.destino_movimentacao || ''}</td>
+                        <td>${item.gdh_saida || ''}</td><td>${item.gdh_esperado_devolucao || ''}</td>
+                        <td>${item.nome_responsavel_cautela || ''}</td><td>${item.doc_externo_cautelou || ''}</td>
+                        <td>${item.secao_pessoal_cautelou || ''}</td><td>${item.nome_dono_real_item || ''}</td></tr>`;
+            });
+            tabelaHtml += `</tbody></table></div>`;
+            conteudoRelatorioDiv.innerHTML = tabelaHtml;
+            addSortListenersToRelatorioTable();
+            if(relatorioSortState.column) updateRelatorioSortIndicators(relatorioSortState.column, relatorioSortState.direction);
+        }
+
+        // --- Lógica Principal ao Carregar a Página ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnImprimir = document.getElementById('btnImprimirRelatorio');
+            if (btnImprimir) {
+                btnImprimir.addEventListener('click', () => window.print());
+            }
+
+            const dadosRelatorioString = sessionStorage.getItem('dadosParaRelatorio');
+            const tituloSessao = sessionStorage.getItem('tituloParaRelatorio');
+            const filtrosAplicadosString = sessionStorage.getItem('filtrosParaRelatorio');
+            
+            localRelatorioData = dadosRelatorioString ? JSON.parse(dadosRelatorioString) : [];
+            currentFiltrosAplicados = filtrosAplicadosString ? JSON.parse(filtrosAplicadosString) : {};
+            
+            relatorioSortState = { column: null, direction: 'asc' }; 
+
+            if (localRelatorioData.length > 0) {
+                if (tituloSessao === 'Relatório de Inventário Total') {
+                    relatorioSortState.column = 'nome_militar_dono'; 
+                    currentRenderFunction = renderTabelaInventarioTotal;
+                } else if (tituloSessao === 'Relatório de Material em Uso') {
+                    relatorioSortState.column = 'gdh_esperado_devolucao';
+                    currentRenderFunction = renderTabelaMaterialEmUso;
+                } else if (tituloSessao === 'Relatório de Devoluções Atrasadas') { 
+                    relatorioSortState.column = 'gdh_esperado_devolucao'; 
+                    currentRenderFunction = renderTabelaDevolucoesAtrasadas;
+                } else {
+                    document.getElementById('conteudoRelatorioDinamico').innerHTML = '<p style="text-align:center;">Tipo de relatório desconhecido.</p>';
+                    return;
+                }
+                const dadosOrdenados = sortDataRelatorio(localRelatorioData, relatorioSortState.column, relatorioSortState.direction);
+                currentRenderFunction(dadosOrdenados, currentFiltrosAplicados);
+
+            } else {
+                document.getElementById('conteudoRelatorioDinamico').innerHTML = '<p style="text-align:center;">Nenhum dado. Gere um relatório no painel.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,285 @@
+/* style.css */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    flex-grow: 1;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+header h1 {
+    margin: 0;
+    color: #333;
+    font-size: 2em;
+}
+
+header h2 {
+    margin: 5px 0 0;
+    color: #555;
+    font-size: 1.2em;
+    font-weight: normal;
+}
+
+.login-container {
+    max-width: 450px;
+    margin-top: 50px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="number"],
+.form-group textarea,
+.form-group select {
+    width: calc(100% - 22px); /* Considera padding e borda */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Garante que padding e border não aumentem o tamanho total */
+}
+
+.btn {
+    display: inline-block;
+    background-color: #28a745; /* Verde Exército (aproximado) */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #218838; /* Verde mais escuro */
+}
+
+.btn-primary {
+    background-color: #007bff;
+}
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-logout {
+    background-color: #dc3545;
+    margin-left: 15px;
+}
+.btn-logout:hover {
+    background-color: #c82333;
+}
+
+.btn-action {
+    background-color: #ffc107; /* Amarelo para editar/cautelar */
+    color: #333;
+    padding: 5px 10px;
+    font-size: 0.9em;
+    margin-right: 5px;
+}
+.btn-action:hover {
+    background-color: #e0a800;
+}
+.btn-delete {
+    background-color: #dc3545; /* Vermelho para deletar */
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+
+.mensagem-erro {
+    color: red;
+    margin-top: 10px;
+    text-align: center;
+}
+
+footer {
+    text-align: center;
+    padding: 20px 0;
+    background-color: #333;
+    color: #fff;
+    width: 100%;
+    margin-top: auto; /* Empurra o rodapé para baixo */
+}
+
+/* Dashboard Styles */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+}
+
+.user-info span {
+    font-weight: bold;
+}
+
+.dashboard-nav ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    background-color: #e9ecef;
+    border-radius: 4px;
+}
+
+.dashboard-nav ul li a {
+    display: block;
+    padding: 10px 20px;
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+}
+
+.dashboard-nav ul li a:hover,
+.dashboard-nav ul li a.active-link {
+    background-color: #28a745;
+    color: white;
+    border-radius: 4px;
+}
+
+.content-section {
+    display: none; /* Esconde todas as seções por padrão */
+    padding: 20px;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    background-color: #fff;
+}
+
+.content-section.active-section {
+    display: block; /* Mostra a seção ativa */
+}
+
+.content-section h2 {
+    margin-top: 0;
+    border-bottom: 2px solid #28a745;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.table-container {
+    overflow-x: auto; /* Permite rolagem horizontal em tabelas grandes */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.info-text {
+    background-color: #e9ecef;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.report-area {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px dashed #ccc;
+    min-height: 100px;
+    background-color: #f9f9f9;
+}
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto; /* 10% from the top and centered */
+    padding: 25px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    max-width: 600px;
+    border-radius: 8px;
+    position: relative;
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}

@@ -1,0 +1,28 @@
+{
+  "name": "sistema-controle-material",
+  "version": "1.0.0",
+  "description": "Sistema para otimizar o controle de material Classe VII em campanha na AMAN.",
+  "main": "servidor.js",
+  "scripts": {
+    "start": "node servidor.js",
+    "dev": "nodemon servidor.js"
+  },
+  "keywords": [
+    "controle",
+    "material",
+    "aman",
+    "militar",
+    "inventario"
+  ],
+  "author": "Cadete Hermes, turma 2025",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
+

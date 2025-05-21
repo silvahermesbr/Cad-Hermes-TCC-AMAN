@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel - Sistema de Controle de Material</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'army-green': '#4F6A4E',
+                        'gold-accent': '#B8860B',
+                        'navy-blue': '#2C3E50', // A darker blue for contrast or primary elements
+                        'light-gray': '#f0f2f5',
+                        'medium-gray': '#d1d5db',
+                        'dark-gray': '#374151',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background for the whole page */
+        }
+
+        /* Custom scrollbar for a cleaner look (optional) */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+
+        /* Styles for sortable table headers */
+        .sortable-header {
+            cursor: pointer;
+            position: relative;
+            padding-right: 20px; /* Space for sort indicator */
+        }
+        .sort-indicator {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.9em;
+        }
+        .sort-indicator.asc::after { content: ' ▲'; }
+        .sort-indicator.desc::after { content: ' ▼'; }
+
+        /* Active link styling for navigation */
+        .active-link {
+            background-color: #4F6A4E; /* army-green */
+            color: white !important;
+            font-weight: 600;
+        }
+        .active-link:hover {
+            background-color: #405840 !important;
+        }
+
+        /* Content section visibility (JS will toggle 'hidden') */
+        .content-section {
+            display: none; /* Hidden by default */
+        }
+        .content-section.active-section {
+            display: block; /* Shown when active */
+        }
+
+        /* Modal base styles */
+        .modal {
+            display: none; /* Hidden by default, JS will toggle */
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6); /* Dimmed background */
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.flex { /* Use flex to center when shown */
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            width: 90%;
+            max-width: 600px; /* Default max-width, can be overridden */
+            position: relative; /* For close button positioning */
+        }
+
+        .modal-content-lg { /* For wider modals if needed */
+            max-width: 800px;
+        }
+
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #333;
+        }
+
+        /* Styling for form groups within modals and sections */
+        .form-group {
+            margin-bottom: 1rem; /* Tailwind's mb-4 */
+        }
+        .form-group label {
+            display: block; /* Tailwind's block */
+            margin-bottom: 0.25rem; /* Tailwind's mb-1 */
+            font-weight: 500; /* Tailwind's font-medium */
+            color: #374151; /* Tailwind's text-gray-700 */
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="password"],
+        .form-group input[type="datetime-local"], /* For GDH inputs if you upgrade them */
+        .form-group textarea,
+        .form-group select {
+            width: 100%; /* Tailwind's w-full */
+            padding: 0.75rem 1rem; /* Tailwind's px-4 py-3 */
+            border: 1px solid #d1d5db; /* Tailwind's border-gray-300 */
+            border-radius: 0.5rem; /* Tailwind's rounded-lg */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Tailwind's shadow-sm */
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input[type="text"]:focus,
+        .form-group input[type="number"]:focus,
+        .form-group input[type="password"]:focus,
+        .form-group input[type="datetime-local"]:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4F6A4E; /* army-green */
+            box-shadow: 0 0 0 2px rgba(79, 106, 78, 0.3); /* Tailwind's focus:ring-army-green */
+        }
+        .form-group small {
+            font-size: 0.875rem; /* Tailwind's text-sm */
+            color: #6b7280; /* Tailwind's text-gray-500 */
+            margin-top: 0.25rem; /* Tailwind's mt-1 */
+        }
+         /* Radio button styling */
+        .form-group input[type="radio"] {
+            margin-right: 0.25rem;
+            accent-color: #4F6A4E; /* army-green */
+        }
+        .form-group input[type="radio"] + label {
+            display: inline !important;
+            font-weight: normal !important;
+            margin-right: 1rem !important;
+        }
+
+        /* General button styling */
+        .btn {
+            padding: 0.65rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #4F6A4E; /* army-green */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #405840; /* Darker army-green */
+        }
+        .btn-secondary {
+            background-color: #6b7280; /* gray-500 */
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563; /* gray-600 */
+        }
+        .btn-danger {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626; /* red-600 */
+        }
+        .btn-logout {
+             background-color: #ef4444; /* red-500 */
+             color: white;
+             padding: 0.5rem 1rem;
+        }
+        .btn-logout:hover {
+            background-color: #dc2626; /* red-600 */
+        }
+
+        /* Table styling */
+        .table-container {
+            overflow-x: auto; /* For responsive tables */
+            background-color: white;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* shadow-lg */
+            margin-top: 1.5rem; /* mt-6 */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 0.75rem 1rem; /* py-3 px-4 */
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb; /* border-gray-200 */
+        }
+        thead th {
+            background-color: #f9fafb; /* gray-50 */
+            font-weight: 600; /* font-semibold */
+            color: #374151; /* text-gray-700 */
+            text-transform: uppercase;
+            font-size: 0.75rem; /* text-xs */
+            letter-spacing: 0.05em;
+        }
+        tbody tr:hover {
+            background-color: #f9fafb; /* gray-50 */
+        }
+        td .btn { /* Smaller buttons for table actions */
+            padding: 0.35rem 0.75rem;
+            font-size: 0.875rem; /* text-sm */
+            margin-right: 0.25rem;
+        }
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="flex h-screen antialiased text-gray-800">
+
+    <aside class="w-64 bg-navy-blue text-gray-100 p-4 space-y-6 fixed top-0 left-0 h-full shadow-lg z-40">
+        <div class="text-center py-4 border-b border-gray-700">
+            <h1 class="text-xl font-bold">S C M</h1>
+            <p class="text-xs text-gray-400">1ª Cia Com</p>
+        </div>
+        <nav class="dashboard-nav">
+            <ul class="space-y-2">
+                <li><a href="#" id="linkInventario" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-army-green hover:text-white active-link"><i class="fas fa-boxes w-6 mr-2"></i>Inventário</a></li>
+                <li><a href="#" id="linkMovimentacoes" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-army-green hover:text-white"><i class="fas fa-truck-loading w-6 mr-2"></i>Movimentações</a></li>
+                <li><a href="#" id="linkPessoal" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-army-green hover:text-white"><i class="fas fa-users w-6 mr-2"></i>Pessoal</a></li>
+                <li><a href="#" id="linkRelatorios" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-army-green hover:text-white"><i class="fas fa-chart-pie w-6 mr-2"></i>Relatórios</a></li>
+            </ul>
+        </nav>
+        <div class="absolute bottom-4 left-4 right-4 text-center text-xs text-gray-400">
+             &copy; 2025 Cadete Hermes
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col ml-64"> <header class="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-30">
+            <h1 class="text-2xl font-semibold text-gray-700" id="pageTitle">Painel de Controle</h1>
+            <div class="user-info flex items-center space-x-4">
+                <span class="text-gray-600">Bem-vindo, <span id="nomeUsuario" class="font-medium">Usuário</span>!</span>
+                <button id="btnLogout" class="btn btn-logout">
+                    <i class="fas fa-sign-out-alt mr-1"></i>Sair
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 p-6 space-y-6 dashboard-main">
+            <section id="secaoInventario" class="content-section active-section bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-700">Inventário de Material</h2>
+                    <button id="btnAdicionarItem" class="btn btn-primary"><i class="fas fa-plus mr-2"></i>Adicionar Novo Item</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable-header" data-column-key="codigo_item_bd">Cód. Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_item">Nome <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="descricao_item">Descrição <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="quantidade">Quantidade <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="local_armazenamento">Local <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="id_militar_dono">Dono (ID) <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_inicial">GDH Inicial <span class="sort-indicator"></span></th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaInventarioCorpo">
+                            <tr><td colspan="8" class="text-center py-4">Carregando inventário...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="secaoMovimentacoes" class="content-section bg-white p-6 rounded-lg shadow-lg">
+                 <h2 class="text-2xl font-semibold text-gray-700 mb-6">Registro de Movimentações</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable-header" data-column-key="codigo_item_fk">Cód. Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_item_cautelado">Nome Item <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="quantidade_movimentada">Qtd Mov. <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="destino_movimentacao">Destino <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_saida">GDH Saída <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_entrada">GDH Entrada <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="gdh_esperado_devolucao">GDH Esperado <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_responsavel_cautela">Responsável <span class="sort-indicator"></span></th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaMovimentacoesCorpo">
+                            <tr><td colspan="9" class="text-center py-4">Carregando movimentações...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="secaoPessoal" class="content-section bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-700">Militares Cadastrados</h2>
+                    <button id="btnAdicionarMilitar" class="btn btn-primary" style="display: none;"><i class="fas fa-user-plus mr-2"></i>Adicionar Novo Militar</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable-header" data-column-key="id_militar">ID Militar <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="nome_completo">Nome Completo <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="numero_contato">Nº Contato <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="secao">Seção <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="identidade_militar">Identidade <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="status">Status <span class="sort-indicator"></span></th>
+                                <th class="sortable-header" data-column-key="is_admin">Admin? <span class="sort-indicator"></span></th>
+                                <th id="colAcoesPessoalHeader" style="display: none;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaPessoalCorpo">
+                            <tr><td colspan="8" class="text-center py-4">Carregando pessoal...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="secaoRelatorios" class="content-section bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-6">Geração de Relatórios</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="form-group">
+                        <label for="tipoRelatorio">Tipo de Relatório:</label>
+                        <select id="tipoRelatorio" name="tipoRelatorio">
+                            <option value="inventario_total">Inventário Total</option>
+                            <option value="material_em_uso">Material em Uso</option>
+                            <option value="devolucao_atrasada">Devoluções Atrasadas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <div id="filtrosInventarioTotal" class="filtros-relatorio p-4 border border-gray-200 rounded-md bg-gray-50" style="display: block;">
+                        <h4 class="text-lg font-medium text-gray-600 mb-3">Filtros para Inventário Total:</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="form-group"><label for="filtroInvNomeItem">Nome do Item (parcial):</label><input type="text" id="filtroInvNomeItem" name="filtroInvNomeItem" placeholder="Ex: Rádio"></div>
+                            <div class="form-group"><label for="filtroInvLocal">Local (parcial):</label><input type="text" id="filtroInvLocal" name="filtroInvLocal" placeholder="Ex: Almoxarifado"></div>
+                            <div class="form-group"><label for="filtroInvIdDono">ID Dono (exato):</label><input type="text" id="filtroInvIdDono" name="filtroInvIdDono" placeholder="Ex: CADETE_HERMES_01"></div>
+                        </div>
+                    </div>
+                    <div id="filtrosMaterialEmUso" class="filtros-relatorio p-4 border border-gray-200 rounded-md bg-gray-50" style="display: none;">
+                        <h4 class="text-lg font-medium text-gray-600 mb-3">Filtros para Material em Uso:</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="form-group"><label for="filtroUsoIdDonoItem">ID Dono Item (exato):</label><input type="text" id="filtroUsoIdDonoItem" name="filtroUsoIdDonoItem" placeholder="Ex: CADETE_HERMES_01"></div>
+                            <div class="form-group"><label for="filtroUsoIdPessoalCautelou">ID/Nome Cautelou:</label><input type="text" id="filtroUsoIdPessoalCautelou" name="filtroUsoIdPessoalCautelou" placeholder="Ex: MILITAR_XYZ"></div>
+                            <div class="form-group"><label for="filtroUsoDestino">Destino (parcial):</label><input type="text" id="filtroUsoDestino" name="filtroUsoDestino" placeholder="Ex: Manobra"></div>
+                        </div>
+                    </div>
+                    <div id="filtrosDevolucoesAtrasadas" class="filtros-relatorio p-4 border border-gray-200 rounded-md bg-gray-50" style="display: none;">
+                        <h4 class="text-lg font-medium text-gray-600 mb-3">Filtros para Devoluções Atrasadas:</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="form-group"><label for="filtroAtrasoIdDonoItem">ID Dono Item (exato):</label><input type="text" id="filtroAtrasoIdDonoItem" name="filtroAtrasoIdDonoItem" placeholder="Ex: CADETE_HERMES_01"></div>
+                            <div class="form-group"><label for="filtroAtrasoIdPessoalCautelou">ID/Nome Cautelou:</label><input type="text" id="filtroAtrasoIdPessoalCautelou" name="filtroAtrasoIdPessoalCautelou" placeholder="Ex: MILITAR_XYZ"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btnGerarRelatorio" class="btn btn-primary"><i class="fas fa-file-alt mr-2"></i>Gerar Relatório</button>
+                <div id="areaRelatorio" class="report-area mt-6 p-4 border border-gray-200 rounded-md min-h-[100px] bg-gray-50">
+                    <p class="text-center text-gray-500">Selecione o tipo de relatório e clique em "Gerar Relatório".</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="modalInventario" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3 id="modalInventarioTitulo" class="text-xl font-semibold text-gray-700 mb-4">Adicionar Novo Item</h3>
+            <form id="formInventario" class="space-y-4">
+                <input type="hidden" id="idItemInventario" name="idItemInventario">
+                <div class="form-group">
+                    <label for="codigoItem">Código do Item (Manual):</label>
+                    <input type="text" id="codigoItem" name="codigoItem" required>
+                </div>
+                <div class="form-group">
+                    <label for="nomeItem">Nome do Item:</label>
+                    <input type="text" id="nomeItem" name="nomeItem" required>
+                </div>
+                <div class="form-group">
+                    <label for="descricaoItem">Descrição:</label>
+                    <textarea id="descricaoItem" name="descricaoItem" rows="3"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label for="quantidadeItem">Quantidade:</label>
+                        <input type="number" id="quantidadeItem" name="quantidadeItem" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="localItem">Local de Armazenamento:</label>
+                        <input type="text" id="localItem" name="localItem">
+                    </div>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-2"></i>Salvar Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalCautela" class="modal">
+        <div class="modal-content modal-content-lg"> <span class="close-button">&times;</span>
+            <h3 id="modalCautelaTitulo" class="text-xl font-semibold text-gray-700 mb-4">Cautelar Item</h3>
+            <form id="formCautela" class="space-y-4">
+                <input type="hidden" id="codigoItemCautela" name="codigoItemCautela">
+                <div class="form-group">
+                    <label class="block mb-1">Tipo de Cautela:</label>
+                    <div class="flex items-center space-x-4">
+                        <div>
+                            <input type="radio" id="tipoCautelaInterno" name="tipoCautela" value="interno" checked>
+                            <label for="tipoCautelaInterno">Militar Cadastrado</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="tipoCautelaExterno" name="tipoCautela" value="externo">
+                            <label for="tipoCautelaExterno">Militar Externo</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="camposCautelaInterno" class="form-group">
+                    <label for="idMilitarCautela">ID do Militar que está Cautelando:</label>
+                    <input type="text" id="idMilitarCautela" name="idMilitarCautela" placeholder="Ex: CADETE_SILVA_02">
+                </div>
+                <div id="camposCautelaExterno" style="display: none;" class="space-y-4">
+                    <div class="form-group">
+                        <label for="nomeExternoCautelou">Nome do Militar Externo:</label>
+                        <input type="text" id="nomeExternoCautelou" name="nomeExternoCautelou" placeholder="Nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="docExternoCautelou">Documento do Militar Externo:</label>
+                        <input type="text" id="docExternoCautelou" name="docExternoCautelou" placeholder="Identidade ou CPF">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label for="quantidadeCautela">Quantidade a Cautelar:</label>
+                        <input type="number" id="quantidadeCautela" name="quantidadeCautela" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="destinoCautela">Destino da Movimentação:</label>
+                        <input type="text" id="destinoCautela" name="destinoCautela" required placeholder="Ex: Missão X, Treinamento Y">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="gdhEsperadoCautela">GDH Esperado para Devolução:</label>
+                    <input type="text" id="gdhEsperadoCautela" name="gdhEsperadoCautela" placeholder="DD/MM/AAAA HH:MM:SS" required>
+                    </div>
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check-circle mr-2"></i>Confirmar Cautela</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalPessoal" class="modal">
+        <div class="modal-content modal-content-lg">
+            <span class="close-button">&times;</span>
+            <h3 id="modalPessoalTitulo" class="text-xl font-semibold text-gray-700 mb-4">Adicionar Novo Militar</h3>
+            <form id="formPessoal" class="space-y-4">
+                <input type="hidden" id="idMilitarEdicao" name="idMilitarEdicao">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label for="pessoalIdMilitar">ID Militar (Login Único):</label>
+                        <input type="text" id="pessoalIdMilitar" name="pessoalIdMilitar" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalNomeCompleto">Nome Completo:</label>
+                        <input type="text" id="pessoalNomeCompleto" name="pessoalNomeCompleto" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div class="form-group">
+                        <label for="pessoalIdentidadeMilitar">Identidade Militar (Documento):</label>
+                        <input type="text" id="pessoalIdentidadeMilitar" name="pessoalIdentidadeMilitar" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalSenha">Senha:</label>
+                        <input type="password" id="pessoalSenha" name="pessoalSenha">
+                        <small>Deixe em branco para não alterar (em edição).</small>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label for="pessoalNumeroContato">Nº Contato:</label>
+                        <input type="text" id="pessoalNumeroContato" name="pessoalNumeroContato">
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalSecao">Seção:</label>
+                        <input type="text" id="pessoalSecao" name="pessoalSecao">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label for="pessoalStatus">Status do Login:</label>
+                        <select id="pessoalStatus" name="pessoalStatus">
+                            <option value="1">Ativo</option>
+                            <option value="0">Inativo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoalIsAdmin">É Administrador?</label>
+                        <select id="pessoalIsAdmin" name="pessoalIsAdmin">
+                            <option value="0">Não</option>
+                            <option value="1">Sim</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end pt-2">
+                     <button type="submit" class="btn btn-primary"><i class="fas fa-user-check mr-2"></i>Salvar Militar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script>
+        // Basic JS for sidebar active link and section toggling (can be enhanced in dashboard.js)
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.dashboard-nav a');
+            const contentSections = document.querySelectorAll('.content-section');
+            const pageTitle = document.getElementById('pageTitle');
+            const sectionTitles = {
+                linkInventario: 'Inventário de Material',
+                linkMovimentacoes: 'Registro de Movimentações',
+                linkPessoal: 'Militares Cadastrados',
+                linkRelatorios: 'Geração de Relatórios'
+            };
+
+            // Function to set active section and link
+            function setActive(linkId) {
+                navLinks.forEach(link => {
+                    link.classList.remove('active-link');
+                    if (link.id === linkId) {
+                        link.classList.add('active-link');
+                    }
+                });
+                contentSections.forEach(section => {
+                    section.classList.remove('active-section');
+                    section.classList.add('hidden'); // Ensure others are hidden
+                    if (section.id === 'secao' + linkId.substring(4)) { // e.g., secaoInventario from linkInventario
+                        section.classList.add('active-section');
+                        section.classList.remove('hidden');
+                    }
+                });
+                if (pageTitle && sectionTitles[linkId]) {
+                    pageTitle.textContent = sectionTitles[linkId];
+                }
+            }
+
+            // Set initial active state (Inventário by default)
+            setActive('linkInventario');
+
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    setActive(link.id);
+                });
+            });
+
+            // Modal handling (basic example, your dashboard.js likely has more robust logic)
+            const modals = document.querySelectorAll('.modal');
+            const closeButtons = document.querySelectorAll('.close-button');
+
+            function openModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = 'flex'; // Use flex to enable centering
+                }
+            }
+
+            function closeModal(modal) {
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            }
+
+            closeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    closeModal(button.closest('.modal'));
+                });
+            });
+
+            // Example: Hook up "Adicionar Novo Item" button
+            const btnAdicionarItem = document.getElementById('btnAdicionarItem');
+            if (btnAdicionarItem) {
+                btnAdicionarItem.addEventListener('click', () => openModal('modalInventario'));
+            }
+            const btnAdicionarMilitar = document.getElementById('btnAdicionarMilitar');
+             if (btnAdicionarMilitar) {
+                btnAdicionarMilitar.addEventListener('click', () => {
+                    // Reset form for "add" mode if needed by your dashboard.js
+                    document.getElementById('modalPessoalTitulo').textContent = 'Adicionar Novo Militar';
+                    document.getElementById('formPessoal').reset();
+                    document.getElementById('idMilitarEdicao').value = ''; // Clear any edit ID
+                    openModal('modalPessoal');
+                });
+            }
+
+
+            // Handle Cautela radio buttons
+            const tipoCautelaInterno = document.getElementById('tipoCautelaInterno');
+            const tipoCautelaExterno = document.getElementById('tipoCautelaExterno');
+            const camposInterno = document.getElementById('camposCautelaInterno');
+            const camposExterno = document.getElementById('camposCautelaExterno');
+
+            if (tipoCautelaInterno && tipoCautelaExterno && camposInterno && camposExterno) {
+                tipoCautelaInterno.addEventListener('change', () => {
+                    if (tipoCautelaInterno.checked) {
+                        camposInterno.style.display = 'block';
+                        camposExterno.style.display = 'none';
+                    }
+                });
+                tipoCautelaExterno.addEventListener('change', () => {
+                    if (tipoCautelaExterno.checked) {
+                        camposInterno.style.display = 'none';
+                        camposExterno.style.display = 'block';
+                    }
+                });
+            }
+
+            // Report filter visibility (example, your dashboard.js might handle this)
+            const tipoRelatorioSelect = document.getElementById('tipoRelatorio');
+            const filtroDivs = {
+                inventario_total: document.getElementById('filtrosInventarioTotal'),
+                material_em_uso: document.getElementById('filtrosMaterialEmUso'),
+                devolucao_atrasada: document.getElementById('filtrosDevolucoesAtrasadas')
+            };
+
+            if (tipoRelatorioSelect) {
+                tipoRelatorioSelect.addEventListener('change', function() {
+                    Object.values(filtroDivs).forEach(div => {
+                        if (div) div.style.display = 'none';
+                    });
+                    const selectedFilterDiv = filtroDivs[this.value];
+                    if (selectedFilterDiv) {
+                        selectedFilterDiv.style.display = 'block';
+                    }
+                });
+                // Trigger change on load to show default filters
+                tipoRelatorioSelect.dispatchEvent(new Event('change'));
+            }
+
+            // Placeholder for sortable header functionality (your dashboard.js should handle actual sorting)
+            document.querySelectorAll('.sortable-header').forEach(header => {
+                header.addEventListener('click', function() {
+                    // Your sorting logic from dashboard.js would go here
+                    // For demo, toggle a class or update indicator
+                    const indicator = this.querySelector('.sort-indicator');
+                    if (indicator) {
+                        if (indicator.classList.contains('asc')) {
+                            indicator.classList.remove('asc');
+                            indicator.classList.add('desc');
+                        } else {
+                            indicator.classList.remove('desc');
+                            indicator.classList.add('asc');
+                        }
+                        // Clear other indicators
+                        document.querySelectorAll('.sortable-header .sort-indicator').forEach(ind => {
+                            if (ind !== indicator) {
+                                ind.classList.remove('asc', 'desc');
+                            }
+                        });
+                    }
+                    console.log('Sorting by:', this.dataset.columnKey);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
