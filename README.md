@@ -1,8 +1,11 @@
 # Sistema para Otimizar o Controle de Material Classe VII em Operações de Campanha - Protótipo AMAN
 
 **Autor:** Hermes de Araújo Santos Generino da Silva
+
 **Ano:** 2025
+
 **Instituição:** Academia Militar das Agulhas Negras (AMAN)
+
 **Orientador:** Felipe Barcellos Brasil
 
 ## RESUMO
