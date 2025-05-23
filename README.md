@@ -30,7 +30,7 @@ Desenvolver um sistema para integrar e otimizar o controle de material Classe VI
 ## Tecnologias Utilizadas
 * **Frontend:** HTML, CSS, JavaScript
 * **Backend:** NodeJS, ExpressJS
-* **Banco de Dados:** SQLite (protótipo), com MariaDB considerado para futuro (RNF 02)
+* **Banco de Dados:** SQLite (protótipo)
 * **Ambiente de Desenvolvimento:** Neovim
 * **Auxiliado por:** Grandes Modelos de Linguagem (GML) - "Gemini 2.5 pro (preview)"
 
